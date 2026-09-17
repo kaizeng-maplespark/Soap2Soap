@@ -1,37 +1,30 @@
-"""
-Step 3 — Prompt Compilation.
-Compiles structured t2i + i2v prompts for every shot using the prompt compiler.
-"""
+"""Step 3 — Prompt Compilation."""
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
 from v2.prompts.shot_compiler import compile_t2i_prompt, compile_i2v_prompt, build_char_alias_map
 
 if TYPE_CHECKING:
     from v2.core.schema import PipelineState
 
-
 def run(state: "PipelineState") -> "PipelineState":
     print("\n" + "=" * 60)
     print("STEP 3 — Prompt Compilation")
     print("=" * 60)
-
     dialogue_lang = getattr(state, 'dialogue_lang', 'auto')
+    finishing_strength = getattr(state, 'finishing_strength', 'balanced')
     print(f"  Dialogue language: {dialogue_lang}")
-
+    if state.style == "cinefilter":
+        print(f"  CineFilter strength: {finishing_strength}")
     alias_map = build_char_alias_map(state.characters)
     if alias_map:
-        print(f"  Character aliases:")
+        print("  Character aliases:")
         for cid, alias in alias_map.items():
             print(f"    {cid} → {alias}")
-
     for shot in state.shots:
-        shot.t2i_prompt = compile_t2i_prompt(shot, style=state.style)
+        shot.t2i_prompt = compile_t2i_prompt(shot, style=state.style, finishing_strength=finishing_strength)
         shot.i2v_prompt = compile_i2v_prompt(
-            shot, style=state.style,
-            dialogue_lang=dialogue_lang,
-            char_alias_map=alias_map,
+            shot, style=state.style, dialogue_lang=dialogue_lang,
+            char_alias_map=alias_map, finishing_strength=finishing_strength,
         )
         print(f"  Shot {shot.shot_id}: t2i={len(shot.t2i_prompt)}c  i2v={len(shot.i2v_prompt)}c")
-
     return state

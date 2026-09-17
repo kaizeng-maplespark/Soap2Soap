@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 STYLE_PREFIXES = {
     "realistic":      "Photorealistic cinematic style. Shot on 35mm film.",
+    "cinefilter":     "Premium live-action feature-film finish. Preserve source content and geometry while improving cinematic image formation.",
     "disney":         "Disney 3D animated movie style. Vibrant colors, expressive characters, polished CG render.",
     "pixar":          "Pixar 3D animated movie style. Warm soft lighting, subsurface skin glow, richly detailed environments, emotionally expressive characters with realistic proportions.",
     "anime":          "Japanese anime style. Clean linework, vivid colors, cinematic composition.",
@@ -18,54 +19,23 @@ STYLE_PREFIXES = {
     "family_guy":     "American adult animated TV style. Flat colors, clean outlines, comedic proportions.",
 }
 
-# Detailed style rewrite instructions per style
 STYLE_REWRITE_GUIDES = {
     "realistic": "Keep the prompt as-is. It is already in photorealistic cinematic language.",
-    "disney": (
-        "Rewrite using Disney 3D animated movie language. "
-        "Characters become expressive 3D-animated Disney figures with rounded features, big eyes, and smooth polished CG surfaces. "
-        "Environments become vibrant, colorful, and painterly. "
-        "Use words like: vibrant, expressive, animated, polished CG, Disney style, lush, storybook."
+    "cinefilter": (
+        "Preserve the original subject identity, facial features, clothing, objects, action, timing, composition, camera position, camera movement and scene geometry. "
+        "Do not redesign or restage the shot. Improve only the photographic rendering: dimensional motivated lighting, natural subject separation, realistic skin and material microtexture, rich tonal depth, soft highlight roll-off, detailed non-crushed shadows, restrained saturation, subtle warm-cool separation, natural local contrast, atmospheric depth, realistic lens rendering, restrained practical-light bloom, coherent motion rendering and fine organic film texture. "
+        "Avoid plastic skin, synthetic sharpening, excessive HDR, crushed blacks, oversaturation, fake bokeh, exaggerated teal-orange grading, excessive bloom and heavy grain. "
+        "The result should feel photographed rather than generated: expensive, restrained, naturalistic and production-ready."
     ),
-    "pixar": (
-        "Rewrite using Pixar 3D animated movie language. "
-        "Characters become Pixar-style 3D figures: realistic body proportions, soft subsurface skin glow, richly detailed clothing with fabric texture, highly expressive faces with nuanced emotions. "
-        "Environments are warmly lit, physically detailed, and cinematic — like a Pixar feature film frame. "
-        "Use words like: Pixar 3D animation, subsurface scattering, warm soft lighting, cinematic depth of field, photorealistic textures, expressive, emotionally rich, detailed environment."
-    ),
-    "anime": (
-        "Rewrite using Japanese anime visual language. "
-        "Characters become anime-style with clean linework, large expressive eyes, and stylized proportions. "
-        "Environments use flat, vivid colors with detailed linework. "
-        "Use words like: anime style, clean linework, cel-shaded, vivid, dynamic pose, expressive."
-    ),
-    "japanese_anime": (
-        "Rewrite using Japanese manga/anime language. "
-        "Characters have exaggerated proportions, expressive faces, dynamic poses. "
-        "Use words like: manga style, speed lines, expressive, dynamic, cel-shaded, bold outlines."
-    ),
-    "clay": (
-        "Rewrite using claymation stop-motion language. "
-        "Characters become clay figures with visible fingerprint texture, slightly imperfect shapes, and a handcrafted warmth. "
-        "Environments are made of clay, fabric, and foam. "
-        "Use words like: clay figure, stop-motion, claymation, handcrafted, textured clay, warm lighting."
-    ),
-    "lego": (
-        "Rewrite using LEGO animation language. "
-        "Characters become LEGO minifigures: blocky cylindrical head, claw hands, snap-on hair/helmet, printed face and torso, no bendable knees. "
-        "Clothing becomes printed LEGO torso decorations or snap-on pieces. "
-        "Environments are built from colorful LEGO bricks and plates. "
-        "Use words like: LEGO minifigure, brick-built, plastic sheen, printed decoration, stud-top, bright primary colors, LEGO diorama."
-    ),
-    "family_guy": (
-        "Rewrite using Family Guy 2D animation language. "
-        "Characters become flat-colored cartoon figures with thick black outlines and comedic proportions. "
-        "Environments use simple flat backgrounds with clean shapes. "
-        "Use words like: cartoon style, flat colors, thick outlines, comedic, 2D animated, simple background."
-    ),
+    "disney": "Rewrite using Disney 3D animated movie language. Characters become expressive 3D-animated Disney figures with rounded features, big eyes, and smooth polished CG surfaces. Environments become vibrant, colorful, and painterly.",
+    "pixar": "Rewrite using Pixar 3D animated movie language. Characters become Pixar-style 3D figures with soft subsurface skin glow, richly detailed clothing and expressive faces. Environments are warmly lit, physically detailed and cinematic.",
+    "anime": "Rewrite using Japanese anime visual language. Characters become anime-style with clean linework, large expressive eyes, and stylized proportions. Environments use flat, vivid colors with detailed linework.",
+    "japanese_anime": "Rewrite using Japanese manga/anime language. Characters have exaggerated proportions, expressive faces and dynamic poses.",
+    "clay": "Rewrite using claymation stop-motion language. Characters become clay figures with visible fingerprint texture, slightly imperfect shapes and handcrafted warmth. Environments are made of clay, fabric and foam.",
+    "lego": "Rewrite using LEGO animation language. Characters become LEGO minifigures and environments are built from colorful LEGO bricks and plates.",
+    "family_guy": "Rewrite using Family Guy 2D animation language. Characters become flat-colored cartoon figures with thick black outlines and comedic proportions.",
 }
 
-# t2i: full creative rewrite, used for keyframe image generation
 _STYLE_REWRITE_PROMPT = """Rewrite the following image/video generation prompt to match the target visual style.
 
 TARGET STYLE: {style_name}
@@ -82,7 +52,32 @@ Rules:
 - Output ONLY the rewritten prompt text, no explanation, no markdown, no prefix
 """
 
-# i2v: light style prefix only — must stay faithful to the original scene description
+_CINEFILTER_REWRITE_PROMPT = """You are a feature-film finishing cinematographer. Transform the prompt into a CONTENT-PRESERVING cinematic finishing instruction.
+
+ORIGINAL SHOT DESCRIPTION:
+{prompt}
+
+FINISHING STRENGTH: {strength}
+
+Non-negotiable preservation rules:
+- Preserve subject identity and facial features.
+- Preserve clothing, props, text, objects and environment identity.
+- Preserve action, timing, pose, composition, framing, camera position, camera movement and scene geometry.
+- Do not add, remove, replace, redesign or restage anything.
+- Do not beautify or alter age/body/face.
+
+Improve only photographic appearance using scene-appropriate choices: dimensional motivated lighting, realistic skin/material microtexture, tonal depth, soft highlight roll-off, non-crushed shadow detail, restrained saturation, sophisticated but natural color separation, local contrast, atmospheric depth, realistic lens rendering, subtle practical-light bloom, coherent motion rendering and fine organic film texture.
+
+Avoid: plastic skin, synthetic sharpness, excessive HDR, crushed blacks, oversaturation, fake bokeh, exaggerated teal-orange, excessive bloom, heavy grain, fantasy relighting, new light sources, changed weather or changed time of day.
+
+Strength semantics:
+- faithful: subtle tone/color/texture finishing; source appearance remains dominant.
+- balanced: stronger cinematic tone, material, depth and lighting polish while preserving content exactly.
+- strong: maximum photographic reinterpretation that still preserves identity, objects, action, framing and geometry.
+
+Output ONLY the final generation prompt, no explanation or markdown.
+"""
+
 _STYLE_I2V_REWRITE_PROMPT = """Add a brief visual style qualifier to the following video generation prompt.
 
 TARGET STYLE: {style_name}
@@ -92,39 +87,36 @@ ORIGINAL PROMPT (characters already described in natural language):
 {prompt}
 
 Rules:
-- Prepend a SHORT style label (e.g. "Claymation stop-motion animation." or "Pixar 3D animated film.")
+- Prepend a SHORT style label
 - Keep the original action and scene description EXACTLY — do NOT expand, rephrase, or embellish
 - Do NOT invent new details, objects, or character behaviors not in the original
-- Keep all character names (natural language) as-is
+- Keep all character names as-is
 - Keep camera notes as-is
 - Output ONLY the final prompt, no explanation, 1-3 sentences max
 """
 
-# Short style qualifiers for i2v (just a label, not a full guide)
 _I2V_STYLE_QUALIFIERS = {
-    "clay":           "Claymation stop-motion animation. Handcrafted clay figures, visible texture.",
-    "pixar":          "Pixar 3D animated film. Warm lighting, expressive characters.",
-    "disney":         "Disney 3D animated film. Vibrant colors, polished CG.",
-    "anime":          "Japanese anime style. Clean linework, expressive.",
+    "clay": "Claymation stop-motion animation. Handcrafted clay figures, visible texture.",
+    "pixar": "Pixar 3D animated film. Warm lighting, expressive characters.",
+    "disney": "Disney 3D animated film. Vibrant colors, polished CG.",
+    "anime": "Japanese anime style. Clean linework, expressive.",
     "japanese_anime": "Japanese manga/anime style. Dynamic, expressive.",
-    "lego":           "LEGO brick animation. Blocky minifigures, plastic sheen.",
-    "family_guy":     "Family Guy 2D cartoon. Flat colors, thick outlines.",
-    "realistic":      "",
+    "lego": "LEGO brick animation. Blocky minifigures, plastic sheen.",
+    "family_guy": "Family Guy 2D cartoon. Flat colors, thick outlines.",
+    "realistic": "",
+    "cinefilter": "Premium live-action feature-film finish. Preserve source content exactly.",
 }
 
 
-def _rewrite_for_style(prompt: str, style: str) -> str:
-    """Full creative rewrite for t2i (keyframe) prompts."""
+def _rewrite_for_style(prompt: str, style: str, finishing_strength: str = "balanced") -> str:
     if style == "realistic":
         return prompt
-
     from v2.clients.gemini_client import text_generate
-    guide = STYLE_REWRITE_GUIDES.get(style, STYLE_REWRITE_GUIDES["realistic"])
-    rewrite_prompt = _STYLE_REWRITE_PROMPT.format(
-        style_name=style.upper(),
-        style_guide=guide,
-        prompt=prompt,
-    )
+    if style == "cinefilter":
+        rewrite_prompt = _CINEFILTER_REWRITE_PROMPT.format(prompt=prompt, strength=finishing_strength)
+    else:
+        guide = STYLE_REWRITE_GUIDES.get(style, STYLE_REWRITE_GUIDES["realistic"])
+        rewrite_prompt = _STYLE_REWRITE_PROMPT.format(style_name=style.upper(), style_guide=guide, prompt=prompt)
     try:
         result = text_generate(rewrite_prompt)
         return result.strip() if result and result.strip() else prompt
@@ -132,21 +124,17 @@ def _rewrite_for_style(prompt: str, style: str) -> str:
         return prompt
 
 
-def _rewrite_i2v_for_style(prompt: str, style: str) -> str:
-    """Light style prefix rewrite for i2v prompts — faithful to original content."""
+def _rewrite_i2v_for_style(prompt: str, style: str, finishing_strength: str = "balanced") -> str:
     if style == "realistic":
         return prompt
-
-    qualifier = _I2V_STYLE_QUALIFIERS.get(style, "")
-    if not qualifier:
-        return prompt
-
     from v2.clients.gemini_client import text_generate
-    rewrite_prompt = _STYLE_I2V_REWRITE_PROMPT.format(
-        style_name=style.upper(),
-        style_qualifier=qualifier,
-        prompt=prompt,
-    )
+    if style == "cinefilter":
+        rewrite_prompt = _CINEFILTER_REWRITE_PROMPT.format(prompt=prompt, strength=finishing_strength)
+    else:
+        qualifier = _I2V_STYLE_QUALIFIERS.get(style, "")
+        if not qualifier:
+            return prompt
+        rewrite_prompt = _STYLE_I2V_REWRITE_PROMPT.format(style_name=style.upper(), style_qualifier=qualifier, prompt=prompt)
     try:
         result = text_generate(rewrite_prompt)
         return result.strip() if result and result.strip() else prompt
@@ -154,140 +142,72 @@ def _rewrite_i2v_for_style(prompt: str, style: str) -> str:
         return prompt
 
 
-def compile_t2i_prompt(shot: "Shot", style: str = "realistic") -> str:
-    """
-    Build and style-rewrite the image generation prompt for a shot.
-    Step 1: assemble raw content description from shot fields.
-    Step 2: call Gemini to rewrite into target style language.
-    """
-    # Assemble raw content
+def compile_t2i_prompt(shot: "Shot", style: str = "realistic", finishing_strength: str = "balanced") -> str:
     lines = []
-    if shot.t2i_prompt:
-        lines.append(shot.t2i_prompt)
-    if shot.environment_description:
-        lines.append(f"Environment: {shot.environment_description}")
-    if shot.lighting_setup:
-        lines.append(f"Lighting: {shot.lighting_setup}")
-    if shot.color_grading:
-        lines.append(f"Color grading: {shot.color_grading}")
-    if shot.shot_size:
-        lines.append(f"Shot size: {shot.shot_size}")
-    if shot.camera_angle:
-        lines.append(f"Camera angle: {shot.camera_angle}")
-    if shot.focal_length:
-        lines.append(f"Lens: {shot.focal_length}")
-    if shot.depth_of_field:
-        lines.append(f"Depth of field: {shot.depth_of_field}")
-    if shot.mood_atmosphere:
-        lines.append(f"Mood: {shot.mood_atmosphere}")
-    if shot.composition:
-        lines.append(f"Composition: {shot.composition}")
-
-    raw = "\n".join(lines)
-    return _rewrite_for_style(raw, style)
+    if shot.t2i_prompt: lines.append(shot.t2i_prompt)
+    if shot.environment_description: lines.append(f"Environment: {shot.environment_description}")
+    if shot.lighting_setup: lines.append(f"Lighting: {shot.lighting_setup}")
+    if shot.color_grading: lines.append(f"Color grading: {shot.color_grading}")
+    if shot.shot_size: lines.append(f"Shot size: {shot.shot_size}")
+    if shot.camera_angle: lines.append(f"Camera angle: {shot.camera_angle}")
+    if shot.focal_length: lines.append(f"Lens: {shot.focal_length}")
+    if shot.depth_of_field: lines.append(f"Depth of field: {shot.depth_of_field}")
+    if shot.mood_atmosphere: lines.append(f"Mood: {shot.mood_atmosphere}")
+    if shot.composition: lines.append(f"Composition: {shot.composition}")
+    return _rewrite_for_style("\n".join(lines), style, finishing_strength)
 
 
 def _detect_language(texts: list[str]) -> str:
-    """Return 'zh' if any text contains Chinese characters, else 'en'."""
     for t in texts:
-        if any('一' <= c <= '鿿' for c in t):
-            return 'zh'
+        if any('\u4e00' <= c <= '\u9fff' for c in t): return 'zh'
     return 'en'
 
 
 def _build_char_alias(description: str) -> str:
-    """
-    Derive a short natural-language alias from a character description.
-    e.g. "Age: 30s. Male. Clothing: black zip-up jacket..." → "man in black jacket"
-    """
     import re
     desc = description or ""
-
-    # Gender
     if "Female" in desc:
         gender = "woman" if "Age: 3" in desc or "Age: 4" in desc or "Age: 5" in desc else "girl"
-        if re.search(r"Age:\s*\d?[5-9][-–]", desc) or "Age: 5" in desc or "Age: 6" in desc:
-            gender = "girl"
+        if re.search(r"Age:\s*\d?[5-9][-–]", desc) or "Age: 5" in desc or "Age: 6" in desc: gender = "girl"
     elif "Male" in desc:
         gender = "man"
-        if re.search(r"Age:\s*[5-9]\b|\bAge:\s*\d\b", desc):
-            gender = "boy"
-    else:
-        gender = "person"
-
-    # First clothing item (color + item)
+        if re.search(r"Age:\s*[5-9]\b|\bAge:\s*\d\b", desc): gender = "boy"
+    else: gender = "person"
     clothing_match = re.search(r"Clothing:\s*([^.]+)", desc)
     clothing = ""
     if clothing_match:
         raw = clothing_match.group(1).strip()
-        # split on common connectors, take first item only
         first_item = re.split(r",| and | with | over | worn", raw)[0].strip()
-        # keep up to 5 words to stay concise
-        words = first_item.split()[:5]
-        clothing = " ".join(words).rstrip(".,;")
-
-    if clothing:
-        return f"the {gender} in {clothing.lower()}"
-    return f"the {gender}"
+        clothing = " ".join(first_item.split()[:5]).rstrip(".,;")
+    return f"the {gender} in {clothing.lower()}" if clothing else f"the {gender}"
 
 
 def build_char_alias_map(characters) -> dict:
-    """Build {char_id: alias} map from a list of Character objects."""
     return {c.id: _build_char_alias(c.description) for c in characters}
 
 
 def resolve_char_tokens(text: str, alias_map: dict) -> str:
-    """Replace @character_XX tokens with natural-language aliases."""
-    for char_id, alias in alias_map.items():
-        text = text.replace(char_id, alias)
+    for char_id, alias in alias_map.items(): text = text.replace(char_id, alias)
     return text
 
 
 def compile_i2v_prompt(shot: "Shot", style: str = "realistic", dialogue_lang: str = "auto",
-                       char_alias_map: dict = None) -> str:
-    """
-    Build and style-rewrite the video generation prompt for a shot.
-
-    dialogue_lang:
-      "auto" — detect from dialogue text (Chinese chars → zh, else en)
-      "zh"   — always use Chinese dialogue instruction
-      "en"   — always use English dialogue instruction
-    """
+                       char_alias_map: dict = None, finishing_strength: str = "balanced") -> str:
     import re
     base = shot.i2v_prompt or shot.t2i_prompt or "A cinematic shot."
-    # Strip any pre-existing dialogue tail from base (e.g., "台词：xxx说：..."),
-    # since we re-append a standardized dialogue note below.
     base = re.sub(r"\s*台词：.*$", "", base).strip()
-
-    motion_note = ""
-    if shot.subject_movement:
-        motion_note = f" Action: {shot.subject_movement}."
-    if shot.camera_movement:
-        motion_note += f" Camera: {shot.camera_movement}."
-
+    motion_note = f" Action: {shot.subject_movement}." if shot.subject_movement else ""
+    if shot.camera_movement: motion_note += f" Camera: {shot.camera_movement}."
     raw_scene = f"{base}{motion_note}"
-
-    # Resolve @character tokens BEFORE rewrite so Gemini sees natural-language names
-    if char_alias_map:
-        raw_scene = resolve_char_tokens(raw_scene, char_alias_map)
-
-    # Light style rewrite: only adds a style label, stays faithful to original content
-    styled_scene = _rewrite_i2v_for_style(raw_scene, style)
-
-    # Off-screen / voiceover speakers — should NOT be lip-synced to visible characters
+    if char_alias_map: raw_scene = resolve_char_tokens(raw_scene, char_alias_map)
+    styled_scene = _rewrite_i2v_for_style(raw_scene, style, finishing_strength)
     OFF_SCREEN_SPEAKERS = {"旁白", "背景音", "街边群众"}
-
     dialogue_note = ""
     if shot.dialogue:
-        if dialogue_lang == "auto":
-            lang = _detect_language([d.text for d in shot.dialogue])
-        else:
-            lang = dialogue_lang
-
+        lang = _detect_language([d.text for d in shot.dialogue]) if dialogue_lang == "auto" else dialogue_lang
         alias = char_alias_map or {}
         on_screen = [d for d in shot.dialogue if d.speaker_id not in OFF_SCREEN_SPEAKERS]
         off_screen = [d for d in shot.dialogue if d.speaker_id in OFF_SCREEN_SPEAKERS]
-
         parts = []
         if off_screen:
             if lang == "zh":
@@ -296,21 +216,12 @@ def compile_i2v_prompt(shot: "Shot", style: str = "realistic", dialogue_lang: st
             else:
                 lines = "; ".join(f'{d.speaker_id}: "{d.text}"' for d in off_screen)
                 parts.append(f"Off-screen voiceover (NOT spoken by any visible character): {lines}.")
-
         if on_screen:
             if lang == "zh":
-                lines = "；".join(
-                    f'{alias.get(d.speaker_id, d.speaker_id)}说："{d.text}"'
-                    for d in on_screen
-                )
+                lines = "；".join(f'{alias.get(d.speaker_id, d.speaker_id)}说："{d.text}"' for d in on_screen)
                 parts.append(f"对话内容（必须严格使用中文原文发音）：{lines}。")
             else:
-                lines = "; ".join(
-                    f'{alias.get(d.speaker_id, d.speaker_id)} says: "{d.text}"'
-                    for d in on_screen
-                )
+                lines = "; ".join(f'{alias.get(d.speaker_id, d.speaker_id)} says: "{d.text}"' for d in on_screen)
                 parts.append(f"Spoken dialogue (preserve original language exactly): {lines}.")
-
         dialogue_note = " " + " ".join(parts)
-
     return f"{styled_scene}{dialogue_note}"

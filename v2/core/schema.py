@@ -1,37 +1,30 @@
-"""
-Core data models for Soap2Soap V2 pipeline.
-"""
+"""Core data models for Soap2Soap V2 pipeline."""
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-
 @dataclass
 class Dialogue:
-    speaker_id: str        # "@character_01"
+    speaker_id: str
     text: str
-    start_time: float = 0.0  # from Whisper transcript
+    start_time: float = 0.0
     end_time: float = 0.0
-
 
 @dataclass
 class Character:
-    id: str            # "@character_01"
-    name: str          # display name
-    description: str   # full visual description for prompts
-    image_path: Optional[str] = None   # local path to generated reference image
-
+    id: str
+    name: str
+    description: str
+    image_path: Optional[str] = None
 
 @dataclass
 class Shot:
-    index: int                          # 0-based
-    scene_id: str                       # "scene_01"
-    time_range: str                     # "0.00s - 4.53s"
+    index: int
+    scene_id: str
+    time_range: str
     start_time: float
     end_time: float
     duration: float
-
-    # Scene metadata
     setting_description: str = ""
     environment_description: str = ""
     lighting_setup: str = ""
@@ -44,59 +37,35 @@ class Shot:
     mood_atmosphere: str = ""
     composition: str = ""
     subject_movement: str = ""
-
-    # Characters present in this shot
-    characters: List[str] = field(default_factory=list)  # ["@character_01"]
+    characters: List[str] = field(default_factory=list)
     dialogue: List[Dialogue] = field(default_factory=list)
-
-    # Compiled prompts (filled in step 3)
     t2i_prompt: str = ""
     i2v_prompt: str = ""
-
-    # Generated assets (filled in steps 4-5)
     keyframe_path: Optional[str] = None
     video_path: Optional[str] = None
-    status: str = "pending"   # "pending" | "done" | "failed"
+    status: str = "pending"
 
     @property
     def shot_id(self) -> int:
-        """1-based shot ID for filenames."""
         return self.index + 1
-
 
 @dataclass
 class PipelineState:
     video_path: str
-    style: str                          # "disney" | "realistic" | ...
+    style: str
     aspect_ratio: str = "16:9"
     max_shots: int = 10
-    dev_mode: bool = True               # If True: static-image fallback instead of Veo3
-
-    # Generation mode for keyframes
-    generation_mode: str = "consistency"  # "default" | "consistency" | "camera_tree"
-
-    # Keyframe generation model
-    keyframe_model: str = "gemini"       # "gemini" | "gpt-image"
-
-    # Video generation model
-    video_model: str = "seeddance"       # "seeddance" | "veo"
-
-    # Dialogue language for i2v prompts
-    dialogue_lang: str = "auto"          # "auto" | "zh" | "en"
-
-    # Use source-video midpoint frames as 2×2 reference grid for keyframe generation
+    dev_mode: bool = True
+    generation_mode: str = "consistency"
+    keyframe_model: str = "gemini"
+    video_model: str = "seeddance"
+    dialogue_lang: str = "auto"
     source_frame_grid: bool = False
-
+    finishing_strength: str = "balanced"  # faithful | balanced | strong; used by cinefilter
     characters: List[Character] = field(default_factory=list)
     shots: List[Shot] = field(default_factory=list)
-
-    # Design sheet (unified character reference for all shots)
     design_sheet_path: Optional[str] = None
-
-    # Camera tree groups (set by step3b)
     camera_groups: List[Dict[str, Any]] = field(default_factory=list)
-
-    # Output dir (working directory)
     output_dir: str = "."
 
     def get_character(self, char_id: str) -> Optional[Character]:
@@ -109,6 +78,7 @@ class PipelineState:
         return {
             "video": self.video_path,
             "style": self.style,
+            "finishing_strength": self.finishing_strength if self.style == "cinefilter" else "n/a",
             "characters": len(self.characters),
             "shots": len(self.shots),
             "done": sum(1 for s in self.shots if s.status == "done"),
